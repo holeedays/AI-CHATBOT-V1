@@ -14,8 +14,6 @@ from dotenv import load_dotenv
 import os, platform, subprocess
 import numpy as np
 
-
-
 class Classification(BaseModel):
     category_name: str = Field(description="The name of the category")
     raw_output: str = Field(description="All the text you were going to generate in response to the user's input")
@@ -51,6 +49,7 @@ class HF():
         self.audio_gen_model_id = audio_gen_model_id
         self.image_gen_model_id = image_gen_model_id
 
+        # loads where our application is running (which is at chatbot_site, the root)
         load_dotenv("test.env")
         self.client = genai.Client(
             api_key=os.getenv("API_KEY")
@@ -114,7 +113,10 @@ class HF():
             return "Something went wrong! Please try again"
     
         # this would be the response returned to the user
-        return f"Check here {os.path.abspath(file_path)} for the sound file"
+        return f"""
+            Check here '{os.path.abspath(file_path)}' for the sound file. 
+            I've also opened the file for you. Check your open tabs!
+            """
     
     # we use stable-diffusion-v1-4 for our image generation
     def generate_image_from_input(self, user_input: str, file_path: str) -> str:
@@ -135,18 +137,25 @@ class HF():
             print(f"error generating image: {e}")
             return "Something went wrong! Please try again"
 
+        return f"""
+            Check here '{os.path.abspath(file_path)}' for the image file.
+            I've also opened the file for you. Check your open tabs!
+            """
 
-        return f"Check here {os.path.abspath(file_path)} for the image file"
     
     # also manually open the file (beware users, you might get fking jumpscared...)
-    def open_file_to_user(self, file_path: str) -> None:
+    @staticmethod
+    def open_file_to_user(file_path: str) -> None:
         # windows
+
+        # weird issue opening the file... os.startfile() was yielding winerror 2 (file not found error)
+        # even though the relative path existed and the abs path existed as well; finding the abs path seemed to work
         if platform.system() == "Windows":
-            os.startfile(file_path)  
+            os.startfile(os.path.abspath(file_path))  
         # mac
         elif platform.system() == "Darwin":  
-            subprocess.call(["open", file_path])
+            subprocess.call(["open", os.path.abspath(file_path)])
         # linux
         else:  
-            subprocess.call(["xdg-open", file_path])
+            subprocess.call(["xdg-open", os.path.abspath(file_path)])
     

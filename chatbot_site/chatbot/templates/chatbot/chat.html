@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Sesh</title>
+
+    <!-- We're using jquery to allow for simplifying DOM element interaction in our typescript tag-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- Tried using a CDN typescript compiler but it was blocked :/, I guess we have to manually transpilate
+        or use pure js for this then... -->
+    <!-- <script src="https://unpkg.com/typescript@latest/lib/typescript.js"></script> -->
+</head>
+<body>
+    <div id="Chat container"> 
+        <h1> Welcome to your at home chatbot! </h1>
+        <div id="chat_messages">
+            <p id="pretext">
+                <strong>AI:</strong>
+                Hello there user! This is Gemini-At-Home. You can also call me G-At-Home.
+                I am your nonexpensive chatbot that can basically do all the <i>fancy</i>
+                things that ChatGPT, Gemini, LLAMA, etc can do except I'm local and free (somewhat)!
+                Sure, I can't generate high quality music/images or remember our convos
+                (large contexts really be killing tokens), but I won't make your PC crash ...maybe.
+                <i>Anyways</i>, I'm a chatbot powered by 3 AIs: google gemini, stable diffusion,
+                and smallmusicgen, the last 2 mentioned which will be powered via your machine.
+                Do note that, since these models are local, it'll take a little bit longer to
+                load the first messages involving image or music generation. Other than that,
+                I hope you enjoy this little project. Have fun! 
+            </p>
+        </div>
+        <input type="text" id="user_input" placeholder="Type your message here!">
+        <button onclick="sendMessage()">Submit</button>
+    </div>
+    
+    <!-- type param just allows for intellisense for js to be enabled here -->
+    <script type="text/javascript">
+
+        const sendMessage = () => {
+
+            const userInput = $("#user_input").val();
+            // remove white spaces
+            if (userInput.trim() !== "") {
+                // include this message in the conversation
+                $("#chat_messages").append("<p><strong>You:</strong> " + userInput + "</p");
+                // empty the input tab
+                $("#user_input").val("");
+            }
+
+            // create some filler text to make the page a bit more lively
+            ftg = new FillerTextGenerator();
+            ftg.generateText(3500);
+
+            // send our POST request without causing a server reroute 
+            $.ajax({
+                // DJANGO html embed, send our POST request to this URL config
+                url: "{% url 'chatbot_session' %}",
+                type: "POST",
+                // send it over to our django urls
+                data: {
+                    "message": userInput
+                },
+                success: (response) => {
+                    ftg.stop();
+                    ftg.removeCurrentInstance();
+                    $("#chat_messages").append("<p><strong>G-At-Home:</strong> " + response["message"] + "</p");
+                }
+            });
+        }
+
+        $("#userInput").keypress((event)=> {
+            // in jquery, 13 is the enter key
+            if (event.keyCode == 13)
+                sendMessage();
+        });
+
+    </script>
+
+    <script type="text/javascript">
+
+        // class for generating some filler text while the AI models are working
+        class FillerTextGenerator {
+
+            constructor() {
+                // an array of some filler text I can use
+                this.fillerTexts = [
+                "Processing request... I'll be back shortly!",
+                "Interpreting request...",
+                "Thinking...",
+                "Cooking up a response...",
+                "Activating my AI braincells...",
+                "Calibrating...",
+                "Generating...",
+                "Locking in a response...",
+                "CHATGPT activating...",
+                "GPU throttling activated...",
+                "Jimmy Neutroning...",
+                "AI Mode. Activated.",
+                "Accessing the data centers...",
+                "Fetching responses..."
+                ]
+                // a boolean to stop the process from running
+                this.killCurrentTextGeneration = false;
+            }
+
+            // generate our filler text!
+            async generateText(timeBetweenPhrasesMS) {
+
+                while (this.killCurrentTextGeneration !== true) {
+
+                    // select one of the filler texts
+                    const selection = Math.floor(Math.random() * this.fillerTexts.length)
+                    const fillerText = 
+                        `<p id='f_txt'><strong>G-At-Home:</strong> ${this.fillerTexts[selection]}</p>`;
+                    $("#chat_messages").append(fillerText);
+
+                    // sleep for x amount of time
+                    await new Promise((resolve, reject) =>  {
+                        setTimeout(() => resolve(), timeBetweenPhrasesMS);
+                    });
+
+                    // delete our current filler text instance
+                    this.removeCurrentInstance();
+                }
+
+                this.killCurrentTextGeneration = false;
+            }
+
+            // essentially stops activates bool that ends our async thread
+            stop() {
+
+                this.killCurrentTextGeneration = true;
+            } 
+
+            // remove the filler text from id="chat_messages" (if it exists)
+            removeCurrentInstance() {
+
+                // delete our current filler text instance if any
+                if (this.textInstanceExists()) {
+                    // NOTE: this .remove() case only works if both selectors are within the same tag
+                    // i.e. the below jquery is represented like this: <p id="f_txt"></p> 
+                    $("p").remove("#f_txt");
+                }
+            }
+
+            // just a boolean to check if the filler text exists in the div or not
+            textInstanceExists() {
+
+                const attr = $("#f_txt").attr("id", "f_txt");
+
+                return typeof(attr) !== "undefined" && attr !== false;
+            }
+        }
+    </script>
+
+</body>
+</html>
