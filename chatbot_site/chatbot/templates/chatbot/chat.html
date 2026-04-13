@@ -1,26 +1,41 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot Sesh</title>
+    <title>G-At-Home | AI Chatbot</title>
 
-    <!-- We're using jquery to allow for simplifying DOM element interaction in our typescript tag-->
+    <!-- We're using tailwind for our css layout (this will most likely be kinda vibe coded :)) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- We're using jquery to allow for simplifying DOM element interaction -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <!-- Tried using a CDN typescript compiler but it was blocked :/, I guess we have to manually transpilate
-        or use pure js for this then... -->
-    <!-- <script src="https://unpkg.com/typescript@latest/lib/typescript.js"></script> -->
+    <link rel="stylesheet" href="{% static 'chatbot/chat.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div id="Chat container"> 
-        <h1> Welcome to your at home chatbot! </h1>
-        <div id="chat_messages">
-            <p id="pretext">
-                <strong>AI:</strong>
+<body class="bg-[#050505] text-white h-screen flex flex-col overflow-hidden font-['Inter'] relative">
+    
+    <!-- Parallax Background Layer -->
+    <div class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-50 pointer-events-none" 
+         style="background-image: url('https://stable-diffusion-art.com/wp-content/uploads/2022/11/00032-1568x994.png'); background-attachment: fixed;">
+    </div>
+
+    <header class="relative flex-none h-16 bg-black/80 backdrop-blur-xl border-b border-white/10 flex items-center px-8 z-50">
+        <h1 class="text-xl font-medium tracking-tight">Welcome to your at home chatbot</h1>
+        <div class="ml-auto flex items-center gap-2 text-sm text-[#a0a0a0]">
+            <span class="w-2 h-2 bg-[#2dd4bf] rounded-full shadow-[0_0_8px_#2dd4bf]"></span>
+            System Online
+        </div>
+    </header>
+
+    <div id="chat_container" class="relative z-10 flex-1 flex flex-col w-full max-w-[1000px] mx-auto min-h-0 bg-black/70 backdrop-blur-md border-x border-white/5 shadow-2xl"> 
+        <div id="chat_messages" class="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-8 py-8 px-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            <p id="pretext" class="max-w-[85%] text-lg leading-relaxed text-[#a0a0a0] italic border-l-2 border-[#2dd4bf] pl-6 bg-black/20 backdrop-blur-sm rounded-r-lg p-2">
+                <strong class="block text-[0.75rem] uppercase tracking-[0.1em] mb-2 text-[#a0a0a0] not-italic">G-At-Home:</strong>
                 Hello there user! This is Gemini-At-Home. You can also call me G-At-Home.
                 I am your nonexpensive chatbot that can basically do all the <i>fancy</i>
                 things that ChatGPT, Gemini, LLAMA, etc can do except I'm local and free (somewhat)!
-                Sure, I can't generate high quality music/images or remember our convos
+                Sure, I can't generate high quality music/images or remember our convos too well
                 (large contexts really be killing tokens), but I won't make your PC crash ...maybe.
                 <i>Anyways</i>, I'm a chatbot powered by 3 AIs: google gemini, stable diffusion,
                 and smallmusicgen, the last 2 mentioned which will be powered via your machine.
@@ -29,27 +44,47 @@
                 I hope you enjoy this little project. Have fun! 
             </p>
         </div>
-        <input type="text" id="user_input" placeholder="Type your message here!">
-        <button onclick="sendMessage()">Submit</button>
+        
+        <div class="flex-none py-6 px-6 border-t border-white/10 bg-black/40 backdrop-blur-md">
+            <div class="relative flex items-center gap-4 bg-[#121212] border border-white/10 rounded-xl p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                <textarea id="user_input" rows="1" class="flex-1 bg-transparent border-none text-white text-base leading-normal p-0 outline-none resize-none max-h-[200px] min-h-[24px] w-full whitespace-pre-wrap break-words overflow-x-hidden" placeholder="Type your message here..."></textarea>
+                <button id="submit_button" class="flex-none bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:opacity-90 active:scale-95 transition-all" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
     </div>
     
     <!-- type param just allows for intellisense for js to be enabled here -->
     <script type="text/javascript">
 
+        // checks if a request has been set but not receieved with an HTTP reponse yet
+        var request_already_processing = false;
+        // instantiate a field to hold our textgen class
+        let tg;
+
+        // on button click this happens
         const sendMessage = () => {
+
+            if (request_already_processing) {
+                tg.generateUserNotificationSingle(3000);
+                return;
+            }
+            // indicate we are already processing a request
+            request_already_processing = true;
 
             const userInput = $("#user_input").val();
             // remove white spaces
             if (userInput.trim() !== "") {
                 // include this message in the conversation
-                $("#chat_messages").append("<p><strong>You:</strong> " + userInput + "</p");
+                $("#chat_messages").append("<p class='max-w-[85%] text-lg leading-relaxed text-white'><strong class='block text-[0.75rem] uppercase tracking-[0.1em] mb-2 text-[#a0a0a0]'>You:</strong> " + userInput + "</p>");
+                scrollToBottom();
                 // empty the input tab
-                $("#user_input").val("");
+                const textarea = document.getElementById("user_input");
+                textarea.value = "";
+                textarea.style.height = 'inherit';
             }
 
             // create some filler text to make the page a bit more lively
-            ftg = new FillerTextGenerator();
-            ftg.generateText(3500);
+            tg.generateFillerTextContinuously(3500);
 
             // send our POST request without causing a server reroute 
             $.ajax({
@@ -61,96 +96,162 @@
                     "message": userInput
                 },
                 success: (response) => {
-                    ftg.stop();
-                    ftg.removeCurrentInstance();
-                    $("#chat_messages").append("<p><strong>G-At-Home:</strong> " + response["message"] + "</p");
+                    // stop filler text generation or user notifications, etc
+                    tg.stopTextGenerations();
+                    tg.removeHTMLInstance();
+
+                    request_already_processing = false;
+                    $("#chat_messages").append("<p class='max-w-[85%] text-lg leading-relaxed text-white'><strong class='block text-[0.75rem] uppercase tracking-[0.1em] mb-2 text-[#a0a0a0]'>G-At-Home:</strong> " + response["message"] + "</p>");
+                    scrollToBottom();
+                },
+                error: (request, error) => {
+
+                    tg.stopTextGenerations();
+                    tg.removeHTMLInstance();
+                    $("#chat_messages").append("<p class='max-w-[85%] text-lg leading-relaxed text-white'><strong class='block text-[0.75rem] uppercase tracking-[0.1em] mb-2 text-[#a0a0a0]'>G-At-Home:</strong> Something went wrong. Try again shortly.</p>");
+                    scrollToBottom();
                 }
             });
         }
 
-        $("#userInput").keypress((event)=> {
-            // in jquery, 13 is the enter key
-            if (event.keyCode == 13)
-                sendMessage();
+        // use jquery to auto expand our textarea
+        $("#user_input").on('input', function() {
+            $(this).css('height', 'inherit');
+            $(this).css('height', this.scrollHeight + 'px');
         });
+
+        $("#user_input").keypress((event)=> {
+            // in jquery, 13 is the enter key
+            if (event.keyCode == 13 && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // as the name suggests, scrolls the page to the bottom in a lerping fashion to give an ease-in effect
+        async function scrollToBottom() {
+            const chat = document.getElementById("chat_messages");
+            const delayTime = 20;
+            // Use setTimeout to ensure the DOM has finished rendering the new message
+            setTimeout(() => {
+                chat.scrollTo({
+                    top: chat.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, delayTime);
+        }
 
     </script>
 
     <script type="text/javascript">
 
-        // class for generating some filler text while the AI models are working
-        class FillerTextGenerator {
+        // class for generating some filler text and other text while the AI models are working
+        class TextGenerator {
 
             constructor() {
                 // an array of some filler text I can use
                 this.fillerTexts = [
-                "Processing request... I'll be back shortly!",
+                "Processing request...",
                 "Interpreting request...",
                 "Thinking...",
                 "Cooking up a response...",
                 "Activating my AI braincells...",
-                "Calibrating...",
                 "Generating...",
-                "Locking in a response...",
-                "CHATGPT activating...",
-                "GPU throttling activated...",
-                "Jimmy Neutroning...",
-                "AI Mode. Activated.",
-                "Accessing the data centers...",
                 "Fetching responses..."
                 ]
-                // a boolean to stop the process from running
-                this.killCurrentTextGeneration = false;
+                // a boolean to stop continuous text generation processes from running
+                this.killCurrentContinuousTextGeneration = false;
+                // boolean associated with whether a user notificaiton is active
+                this.userNotificationActive = false;
             }
 
             // generate our filler text!
-            async generateText(timeBetweenPhrasesMS) {
+            async generateFillerTextContinuously(timeBetweenPhrasesMS) {
 
-                while (this.killCurrentTextGeneration !== true) {
+                while (this.killCurrentContinuousTextGeneration !== true) {
+                    // if no user notifcaiton is currently displayed
+                    if(!this.userNotificationActive) {
+                        // delete our current filler text instance (if any)
+                        this.removeHTMLInstance();
 
-                    // select one of the filler texts
-                    const selection = Math.floor(Math.random() * this.fillerTexts.length)
-                    const fillerText = 
-                        `<p id='f_txt'><strong>G-At-Home:</strong> ${this.fillerTexts[selection]}</p>`;
-                    $("#chat_messages").append(fillerText);
+                        // select one of the filler texts
+                        const selection = Math.floor(Math.random() * this.fillerTexts.length)
+                        const fillerText = 
+                            `<p id='f_txt' class='max-w-[85%] text-lg leading-relaxed text-white'><strong class='block text-[0.75rem] uppercase tracking-[0.1em] mb-2 text-[#a0a0a0]'>G-At-Home:</strong> ${this.fillerTexts[selection]}</p>`;
+                        $("#chat_messages").append(fillerText);
 
-                    // sleep for x amount of time
-                    await new Promise((resolve, reject) =>  {
-                        setTimeout(() => resolve(), timeBetweenPhrasesMS);
-                    });
+                        // since we added new text, scroll to the bottom of our messages
+                        scrollToBottom();
 
-                    // delete our current filler text instance
-                    this.removeCurrentInstance();
+                        // sleep for x amount of time
+                        await new Promise((resolve, reject) =>  {
+                            setTimeout(() => resolve(), timeBetweenPhrasesMS);
+                        });
+                    }
+                    else {
+                        // in the case there is a notification active, check the function much quicker
+                        const checkTimeMs = 50;
+                        await new Promise((resolve, reject) =>  {
+                            setTimeout(() => resolve(), checkTimeMs);
+                        });
+                    }
                 }
 
-                this.killCurrentTextGeneration = false;
+                this.killCurrentContinuousTextGeneration = false;
+            }
+
+            // in the case the user submits more than one request without an HTTP response,
+            // instead of pausing the ai, we'll just notify the user they can't submit anything
+            // and prevent a secondary POST request until output is set
+            async generateUserNotificationSingle(notificationTimeMs) {
+                // set this boolean up
+                this.userNotificationActive = true;
+
+                // remove curent filler text instance if any
+                this.removeHTMLInstance();
+                // and add the new notification text
+                const notificationText =
+                    "<p id='f_txt' class='max-w-[85%] text-lg leading-relaxed text-white'><strong class='block text-[0.75rem] uppercase tracking-[0.1em] mb-2 text-[#a0a0a0]'>G-At-Home:</strong> <i>Please wait! I'm still processing your previous response!!</i></p>";
+                $("#chat_messages").append(notificationText);
+
+                // since we added new text, scroll to the bottom of our messages
+                scrollToBottom();
+
+                // await some time, probably slightly less than the generate text function() (cause of time overlaps)
+                await new Promise((resolve, reject) => {
+                    setTimeout(() => resolve(), notificationTimeMs)
+                });
+
+                // then set this bool back to false
+                this.userNotificationActive = false;
             }
 
             // essentially stops activates bool that ends our async thread
-            stop() {
+            stopTextGenerations() {
 
-                this.killCurrentTextGeneration = true;
+                this.killCurrentContinuousTextGeneration = true;
             } 
 
-            // remove the filler text from id="chat_messages" (if it exists)
-            removeCurrentInstance() {
+            // remove the filler text/user notifcation/etc from id="chat_messages" (if it exists)
+            removeHTMLInstance() {
 
                 // delete our current filler text instance if any
                 if (this.textInstanceExists()) {
                     // NOTE: this .remove() case only works if both selectors are within the same tag
                     // i.e. the below jquery is represented like this: <p id="f_txt"></p> 
-                    $("p").remove("#f_txt");
+                    $("#f_txt").remove();
                 }
             }
 
             // just a boolean to check if the filler text exists in the div or not
             textInstanceExists() {
-
-                const attr = $("#f_txt").attr("id", "f_txt");
-
-                return typeof(attr) !== "undefined" && attr !== false;
+                return $("#f_txt").length > 0;
             }
         }
+
+        // we can instantiate our text generator here and it we can share it between scripts
+        // without having to explicity export or import (neat!)
+        tg = new TextGenerator();
     </script>
 
 </body>

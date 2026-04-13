@@ -1,0 +1,30 @@
+/* Custom scrollbar styling for the chat messages */
+#chat_messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chat_messages::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+#chat_messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Fallback for Firefox */
+#chat_messages {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Ensure participants (strong tags) look consistent in appended messages */
+#chat_messages p strong {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    color: #a0a0a0;
+    font-weight: 500;
+}
